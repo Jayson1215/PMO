@@ -1,0 +1,31 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Next.js
+.next/
+out/
+
+# Production
+build/
+
+# Env files
+.env
+.env.local
+.env.production.local
+.env.development.local
+
+# Debug
+npm-debug.log*
+
+# Vercel
+.vercel
+
+# TypeScript
+*.tsbuildinfo
+next-env.d.ts
+
+# Supabase
+supabase/.temp/
+supabase.exe

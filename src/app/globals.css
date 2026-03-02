@@ -1,0 +1,133 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 215 28% 17%;
+    --card: 0 0% 100%;
+    --card-foreground: 215 28% 17%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 215 28% 17%;
+    --primary: 213 52% 24%;
+    --primary-foreground: 0 0% 98%;
+    --secondary: 40 62% 55%;
+    --secondary-foreground: 0 0% 9%;
+    --muted: 210 40% 96%;
+    --muted-foreground: 215 16% 47%;
+    --accent: 40 62% 55%;
+    --accent-foreground: 215 28% 17%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 214 32% 91%;
+    --input: 214 32% 91%;
+    --ring: 213 52% 24%;
+    --radius: 0.625rem;
+  }
+
+  .dark {
+    --background: 222 47% 11%;
+    --foreground: 210 40% 98%;
+    --card: 222 47% 14%;
+    --card-foreground: 210 40% 98%;
+    --popover: 222 47% 14%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 40 62% 55%;
+    --primary-foreground: 222 47% 11%;
+    --secondary: 213 52% 24%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 217 33% 17%;
+    --muted-foreground: 215 20% 65%;
+    --accent: 217 33% 17%;
+    --accent-foreground: 210 40% 98%;
+    --destructive: 0 63% 31%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 217 33% 17%;
+    --input: 217 33% 17%;
+    --ring: 40 62% 55%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+}
+
+@layer components {
+  .glass-card {
+    @apply bg-white/80 backdrop-blur-md border border-white/20 shadow-lg;
+  }
+
+  .gradient-primary {
+    @apply bg-gradient-to-r from-fsuu-blue-600 to-fsuu-blue-800;
+  }
+
+  .gradient-gold {
+    @apply bg-gradient-to-r from-fsuu-gold-400 to-fsuu-gold-600;
+  }
+
+  .status-badge {
+    @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold transition-colors;
+  }
+
+  .status-pending {
+    @apply status-badge bg-yellow-100 text-yellow-800;
+  }
+  .status-approved {
+    @apply status-badge bg-green-100 text-green-800;
+  }
+  .status-rejected {
+    @apply status-badge bg-red-100 text-red-800;
+  }
+  .status-borrowed {
+    @apply status-badge bg-blue-100 text-blue-800;
+  }
+  .status-returned {
+    @apply status-badge bg-gray-100 text-gray-800;
+  }
+  .status-overdue {
+    @apply status-badge bg-red-100 text-red-900 ring-1 ring-red-300;
+  }
+  .status-cancelled {
+    @apply status-badge bg-gray-100 text-gray-500;
+  }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: hsl(var(--muted-foreground) / 0.3);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--muted-foreground) / 0.5);
+}
+
+/* Loading skeleton animation */
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    hsl(var(--muted)) 25%,
+    hsl(var(--muted-foreground) / 0.1) 37%,
+    hsl(var(--muted)) 63%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+}

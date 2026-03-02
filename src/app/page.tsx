@@ -66,8 +66,8 @@ export default function HomePage() {
             <Link href="/login">
               <Button
                 size="lg"
-                variant="outline"
-                className="gap-2 border-white/20 text-base text-white hover:bg-white/10"
+                variant="ghost"
+                className="gap-2 border border-white/20 text-base text-white hover:bg-white/10 hover:text-white"
               >
                 Sign In to Dashboard
               </Button>

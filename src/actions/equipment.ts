@@ -5,42 +5,57 @@ import { equipmentSchema } from '@/lib/validations';
 import { revalidatePath } from 'next/cache';
 
 export async function getEquipment(includeArchived = false) {
-  const supabase = await createServerSupabaseClient();
-  let query = supabase
-    .from('equipment')
-    .select('*, equipment_categories(id, name, icon)')
-    .order('created_at', { ascending: false });
+  try {
+    const supabase = await createServerSupabaseClient();
+    let query = supabase
+      .from('equipment')
+      .select('*, equipment_categories(id, name, icon)')
+      .order('created_at', { ascending: false });
 
-  if (!includeArchived) {
-    query = query.eq('is_archived', false);
+    if (!includeArchived) {
+      query = query.eq('is_archived', false);
+    }
+
+    const { data, error } = await query;
+    if (error) { console.error('getEquipment error:', error.message); return []; }
+    return data ?? [];
+  } catch (e) {
+    console.error('getEquipment exception:', e);
+    return [];
   }
-
-  const { data, error } = await query;
-  if (error) throw new Error(error.message);
-  return data;
 }
 
 export async function getEquipmentById(id: string) {
-  const supabase = await createServerSupabaseClient();
-  const { data, error } = await supabase
-    .from('equipment')
-    .select('*, equipment_categories(id, name, icon)')
-    .eq('id', id)
-    .single();
+  try {
+    const supabase = await createServerSupabaseClient();
+    const { data, error } = await supabase
+      .from('equipment')
+      .select('*, equipment_categories(id, name, icon)')
+      .eq('id', id)
+      .single();
 
-  if (error) throw new Error(error.message);
-  return data;
+    if (error) { console.error('getEquipmentById error:', error.message); return null; }
+    return data;
+  } catch (e) {
+    console.error('getEquipmentById exception:', e);
+    return null;
+  }
 }
 
 export async function getCategories() {
-  const supabase = await createServerSupabaseClient();
-  const { data, error } = await supabase
-    .from('equipment_categories')
-    .select('*')
-    .order('name');
+  try {
+    const supabase = await createServerSupabaseClient();
+    const { data, error } = await supabase
+      .from('equipment_categories')
+      .select('*')
+      .order('name');
 
-  if (error) throw new Error(error.message);
-  return data;
+    if (error) { console.error('getCategories error:', error.message); return []; }
+    return data ?? [];
+  } catch (e) {
+    console.error('getCategories exception:', e);
+    return [];
+  }
 }
 
 export async function createEquipment(formData: FormData) {

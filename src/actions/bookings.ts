@@ -90,35 +90,45 @@ export async function createBooking(formData: FormData) {
 }
 
 export async function getBookings(status?: BookingStatus) {
-  const supabase = await createServerSupabaseClient();
-  let query = supabase
-    .from('bookings')
-    .select('*, equipment(id, name, image_url, category_id), profiles:borrower_id(id, full_name, email, department)')
-    .order('created_at', { ascending: false });
+  try {
+    const supabase = await createServerSupabaseClient();
+    let query = supabase
+      .from('bookings')
+      .select('*, equipment(id, name, image_url, category_id), profiles:borrower_id(id, full_name, email, department)')
+      .order('created_at', { ascending: false });
 
-  if (status) {
-    query = query.eq('status', status);
+    if (status) {
+      query = query.eq('status', status);
+    }
+
+    const { data, error } = await query;
+    if (error) { console.error('getBookings error:', error.message); return []; }
+    return data ?? [];
+  } catch (e) {
+    console.error('getBookings exception:', e);
+    return [];
   }
-
-  const { data, error } = await query;
-  if (error) throw new Error(error.message);
-  return data;
 }
 
 export async function getUserBookings() {
-  const supabase = await createServerSupabaseClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  try {
+    const supabase = await createServerSupabaseClient();
+    const { data: { user } } = await supabase.auth.getUser();
 
-  if (!user) return [];
+    if (!user) return [];
 
-  const { data, error } = await supabase
-    .from('bookings')
-    .select('*, equipment(id, name, image_url)')
-    .eq('borrower_id', user.id)
-    .order('created_at', { ascending: false });
+    const { data, error } = await supabase
+      .from('bookings')
+      .select('*, equipment(id, name, image_url)')
+      .eq('borrower_id', user.id)
+      .order('created_at', { ascending: false });
 
-  if (error) throw new Error(error.message);
-  return data;
+    if (error) { console.error('getUserBookings error:', error.message); return []; }
+    return data ?? [];
+  } catch (e) {
+    console.error('getUserBookings exception:', e);
+    return [];
+  }
 }
 
 export async function updateBookingStatus(
@@ -382,55 +392,66 @@ export async function cancelBooking(bookingId: string) {
 }
 
 export async function getBookingStats() {
-  const supabase = await createServerSupabaseClient();
+  const defaultStats = { totalEquipment: 0, activeBookings: 0, overdueBookings: 0, pendingBookings: 0, totalBookings: 0, lowInventory: [] as any[] };
+  try {
+    const supabase = await createServerSupabaseClient();
 
-  // Verify admin access
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return { totalEquipment: 0, activeBookings: 0, overdueBookings: 0, pendingBookings: 0, totalBookings: 0, lowInventory: [] };
+    // Verify admin access
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return defaultStats;
 
-  const [
-    { count: totalEquipment },
-    { count: activeBookings },
-    { count: overdueBookings },
-    { count: pendingBookings },
-    { count: totalBookings },
-  ] = await Promise.all([
-    supabase.from('equipment').select('*', { count: 'exact', head: true }).eq('is_archived', false),
-    supabase.from('bookings').select('*', { count: 'exact', head: true }).in('status', ['approved', 'borrowed']),
-    supabase.from('bookings').select('*', { count: 'exact', head: true }).eq('status', 'overdue'),
-    supabase.from('bookings').select('*', { count: 'exact', head: true }).eq('status', 'pending'),
-    supabase.from('bookings').select('*', { count: 'exact', head: true }),
-  ]);
+    const [
+      { count: totalEquipment },
+      { count: activeBookings },
+      { count: overdueBookings },
+      { count: pendingBookings },
+      { count: totalBookings },
+    ] = await Promise.all([
+      supabase.from('equipment').select('*', { count: 'exact', head: true }).eq('is_archived', false),
+      supabase.from('bookings').select('*', { count: 'exact', head: true }).in('status', ['approved', 'borrowed']),
+      supabase.from('bookings').select('*', { count: 'exact', head: true }).eq('status', 'overdue'),
+      supabase.from('bookings').select('*', { count: 'exact', head: true }).eq('status', 'pending'),
+      supabase.from('bookings').select('*', { count: 'exact', head: true }),
+    ]);
 
-  // Low inventory equipment
-  const { data: lowInventory } = await supabase
-    .from('equipment')
-    .select('id, name, available_quantity, total_quantity')
-    .eq('is_archived', false)
-    .lte('available_quantity', 2)
-    .gt('total_quantity', 0)
-    .order('available_quantity');
+    // Low inventory equipment
+    const { data: lowInventory } = await supabase
+      .from('equipment')
+      .select('id, name, available_quantity, total_quantity')
+      .eq('is_archived', false)
+      .lte('available_quantity', 2)
+      .gt('total_quantity', 0)
+      .order('available_quantity');
 
-  return {
-    totalEquipment: totalEquipment || 0,
-    activeBookings: activeBookings || 0,
-    overdueBookings: overdueBookings || 0,
-    pendingBookings: pendingBookings || 0,
-    totalBookings: totalBookings || 0,
-    lowInventory: lowInventory || [],
-  };
+    return {
+      totalEquipment: totalEquipment || 0,
+      activeBookings: activeBookings || 0,
+      overdueBookings: overdueBookings || 0,
+      pendingBookings: pendingBookings || 0,
+      totalBookings: totalBookings || 0,
+      lowInventory: lowInventory || [],
+    };
+  } catch (e) {
+    console.error('getBookingStats exception:', e);
+    return defaultStats;
+  }
 }
 
 export async function getCalendarBookings(startDate: string, endDate: string) {
-  const supabase = await createServerSupabaseClient();
-  const { data, error } = await supabase
-    .from('bookings')
-    .select('id, booking_code, borrow_date, return_date, status, borrower_name, quantity, equipment(name)')
-    .gte('borrow_date', startDate)
-    .lte('borrow_date', endDate)
-    .in('status', ['approved', 'borrowed', 'pending'])
-    .order('borrow_date');
+  try {
+    const supabase = await createServerSupabaseClient();
+    const { data, error } = await supabase
+      .from('bookings')
+      .select('id, booking_code, borrow_date, return_date, status, borrower_name, quantity, equipment(name)')
+      .gte('borrow_date', startDate)
+      .lte('borrow_date', endDate)
+      .in('status', ['approved', 'borrowed', 'pending'])
+      .order('borrow_date');
 
-  if (error) throw new Error(error.message);
-  return data;
+    if (error) { console.error('getCalendarBookings error:', error.message); return []; }
+    return data ?? [];
+  } catch (e) {
+    console.error('getCalendarBookings exception:', e);
+    return [];
+  }
 }

@@ -71,8 +71,13 @@ export function BookingActions({ booking }: BookingActionsProps) {
       toast.error('Please enter a message');
       return;
     }
+
     startNotifyTransition(async () => {
-      const result = await sendManualReminder(booking.id, notifyMessage, notifyMethod);
+      const result = await sendManualReminder(
+        booking.id, 
+        notifyMessage, 
+        notifyMethod
+      );
       if (result.error) {
         toast.error(result.error);
       } else {

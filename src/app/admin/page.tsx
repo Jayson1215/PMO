@@ -4,8 +4,6 @@ import {
   ClipboardList,
   AlertTriangle,
   Clock,
-  TrendingUp,
-  CheckCircle,
 } from "lucide-react";
 import {
   Card,
@@ -18,17 +16,23 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { DashboardSkeleton } from "@/components/shared/loading-skeletons";
 import { StatusBadge } from "@/components/shared/status-badge";
-import { getBookingStats, getBookings } from "@/actions/bookings";
+import { getBookingStats } from "@/actions/bookings";
+import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { formatDateTime } from "@/lib/utils";
 import Link from "next/link";
 
 async function AdminDashboardContent() {
-  const [stats, recentBookings] = await Promise.all([
+  const supabase = await createServerSupabaseClient();
+  const [stats, { data: recentBookings }] = await Promise.all([
     getBookingStats(),
-    getBookings(),
+    supabase
+      .from('bookings')
+      .select('*, equipment(id, name, image_url, category_id), profiles:borrower_id(id, full_name, email, department)')
+      .order('created_at', { ascending: false })
+      .limit(8),
   ]);
 
-  const recent = recentBookings?.slice(0, 8) || [];
+  const recent = recentBookings ?? [];
 
   return (
     <div className="space-y-6 animate-fade-in">

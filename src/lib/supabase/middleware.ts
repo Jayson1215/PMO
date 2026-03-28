@@ -33,6 +33,18 @@ export async function updateSession(request: NextRequest) {
     }
   );
 
-  await supabase.auth.getUser();
+  try {
+    await supabase.auth.getUser();
+  } catch (error: any) {
+    if (error?.code === 'refresh_token_not_found') {
+      // Clear cookies if the refresh token is missing or invalid
+      request.cookies.getAll().forEach(({ name }) => {
+        if (name.startsWith('sb-') && name.includes('auth-token')) {
+          supabaseResponse.cookies.set(name, '', { maxAge: 0 });
+        }
+      });
+    }
+  }
+
   return supabaseResponse;
 }

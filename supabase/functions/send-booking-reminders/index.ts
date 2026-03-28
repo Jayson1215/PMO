@@ -5,13 +5,15 @@
 // This function:
 // 1. Checks for bookings approaching their return deadline (2hr and 30min)
 // 2. Checks for overdue bookings
-// 3. Sends email notifications via Resend API
+// 3. Sends email notifications via EmailJS API
 // 4. Updates booking and notification records
 /// <reference types="https://esm.sh/@supabase/functions-js/src/edge-runtime.d.ts" />
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
-const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY')!;
+const EMAILJS_SERVICE_ID = Deno.env.get('EMAILJS_SERVICE_ID')!;
+const EMAILJS_TEMPLATE_ID = Deno.env.get('EMAILJS_TEMPLATE_ID')!;
+const EMAILJS_API_KEY = Deno.env.get('EMAILJS_API_KEY')!;
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 const EMAIL_FROM = Deno.env.get('EMAIL_FROM') || 'PMO FSUU <pmo@fsuu.edu.ph>';
@@ -36,20 +38,24 @@ interface BookingReminder {
   overdue_sent: boolean;
 }
 
-// Send email via Resend API
+// Send email via EmailJS API
 async function sendEmail(to: string, subject: string, html: string) {
   try {
-    const response = await fetch('https://api.resend.com/emails', {
+    const response = await fetch('https://api.emailjs.com/api/v1.0/email/send', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${RESEND_API_KEY}`,
       },
       body: JSON.stringify({
-        from: EMAIL_FROM,
-        to: [to],
-        subject,
-        html,
+        service_id: EMAILJS_SERVICE_ID,
+        template_id: EMAILJS_TEMPLATE_ID,
+        user_id: EMAILJS_API_KEY,
+        template_params: {
+          to_email: to,
+          subject,
+          html_content: html,
+          reply_to: EMAIL_FROM,
+        },
       }),
     });
 

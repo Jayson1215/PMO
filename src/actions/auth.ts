@@ -1,5 +1,6 @@
 'use server';
 
+
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { loginSchema, registerSchema } from '@/lib/validations';
 import { redirect } from 'next/navigation';
@@ -17,7 +18,7 @@ export async function signIn(formData: FormData) {
   }
 
   const supabase = await createServerSupabaseClient();
-  const { error } = await supabase.auth.signInWithPassword({
+  const { data, error } = await supabase.auth.signInWithPassword({
     email: result.data.email,
     password: result.data.password,
   });
@@ -26,8 +27,8 @@ export async function signIn(formData: FormData) {
     return { error: error.message };
   }
 
-  // Get user role for redirect
-  const { data: { user } } = await supabase.auth.getUser();
+  // Use data from login directly instead of calling getUser() again
+  const user = data.user;
   if (user) {
     const { data: profile } = await supabase
       .from('profiles')
@@ -35,7 +36,8 @@ export async function signIn(formData: FormData) {
       .eq('id', user.id)
       .single();
 
-    const redirectPath = profile?.role === 'admin' ? '/admin' : '/dashboard';
+    const redirectPath = (profile as any)?.role === 'admin' ? '/admin' : '/dashboard';
+    revalidatePath('/', 'layout');
     redirect(redirectPath);
   }
 

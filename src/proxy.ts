@@ -2,9 +2,47 @@ import { createServerClient } from '@supabase/ssr';
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
-const publicRoutes = ['/', '/login', '/register', '/auth/callback'];
+const PUBLIC_ROUTES = new Set(['/', '/login', '/register', '/auth/callback']);
+const AUTH_LOOKUP_TIMEOUT_MS = 2000;
+
+function clearSupabaseAuthCookies(request: NextRequest, response: NextResponse) {
+  request.cookies
+    .getAll()
+    .filter(({ name }) => name.startsWith('sb-') && name.includes('auth-token'))
+    .forEach(({ name }) => {
+      request.cookies.delete(name);
+      response.cookies.set(name, '', {
+        maxAge: 0,
+        path: '/',
+      });
+    });
+}
+
+function isRefreshTokenNotFoundError(error: unknown) {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    'code' in error &&
+    error.code === 'refresh_token_not_found'
+  );
+}
+
+async function withTimeout<T>(operation: Promise<T>, timeoutMs: number) {
+  const timeoutPromise = new Promise<null>((resolve) => {
+    setTimeout(() => resolve(null), timeoutMs);
+  });
+
+  return Promise.race([operation, timeoutPromise]) as Promise<T | null>;
+}
 
 export async function proxy(request: NextRequest) {
+  const pathname = request.nextUrl.pathname;
+  
+  // 1. FAST PATH: Public routes don't need Supabase or Auth checks
+  if (PUBLIC_ROUTES.has(pathname)) {
+    return NextResponse.next();
+  }
+
   // Safety: if Supabase env vars are missing, let the request through
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -36,28 +74,23 @@ export async function proxy(request: NextRequest) {
       }
     );
 
-    const { data: { user } } = await supabase.auth.getUser();
+    let user = null;
 
-    const pathname = request.nextUrl.pathname;
+    try {
+      const authResult = await withTimeout(
+        supabase.auth.getUser(),
+        AUTH_LOOKUP_TIMEOUT_MS
+      );
 
-    // Allow public routes
-    if (publicRoutes.some((route) => pathname === route)) {
-      // Redirect logged-in users away from login/register
-      if (user && (pathname === '/login' || pathname === '/register')) {
-        try {
-          const { data: profile } = await supabase
-            .from('profiles')
-            .select('role')
-            .eq('id', user.id)
-            .single();
-
-          const redirectPath = (profile as any)?.role === 'admin' ? '/admin' : '/dashboard';
-          return NextResponse.redirect(new URL(redirectPath, request.url));
-        } catch {
-          return supabaseResponse;
-        }
+      if (authResult) {
+        user = authResult.data.user;
       }
-      return supabaseResponse;
+    } catch (error) {
+      if (isRefreshTokenNotFoundError(error)) {
+        clearSupabaseAuthCookies(request, supabaseResponse);
+      } else {
+        throw error;
+      }
     }
 
     // Redirect unauthenticated users to login
@@ -67,28 +100,14 @@ export async function proxy(request: NextRequest) {
       return NextResponse.redirect(redirectUrl);
     }
 
-    // Check admin routes
-    if (pathname.startsWith('/admin')) {
-      try {
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('role')
-          .eq('id', user.id)
-          .single();
-
-        if ((profile as any)?.role !== 'admin') {
-          return NextResponse.redirect(new URL('/dashboard', request.url));
-        }
-      } catch {
-        return NextResponse.redirect(new URL('/dashboard', request.url));
-      }
-    }
-
+    // Note: Admin/Role checks are handled in layout.tsx to keep middleware fast
     return supabaseResponse;
   } catch (e) {
     // If anything fails in middleware, let the request through
     // rather than returning a 500 error
-    console.error('Middleware error:', e);
+    if (!isRefreshTokenNotFoundError(e)) {
+      console.error('Middleware error:', e);
+    }
     return NextResponse.next();
   }
 }

@@ -4,6 +4,7 @@ import { createServerSupabaseClient, createServiceRoleClient } from '@/lib/supab
 import { bookingSchema } from '@/lib/validations';
 import { revalidatePath } from 'next/cache';
 import type { BookingStatus, NotificationType } from '@/types/database';
+import { sendEmail } from '@/lib/mail';
 
 export async function createBooking(formData: FormData) {
   const supabase = await createServerSupabaseClient();
@@ -64,6 +65,38 @@ export async function createBooking(formData: FormData) {
     .single();
 
   if (error) return { error: error.message };
+
+  // Send booking confirmation email with beautiful template
+  try {
+    const borrowDate = new Date(result.data.borrow_date).toLocaleString('en-PH', { timeZone: 'Asia/Manila' });
+    const returnDate = new Date(result.data.return_date).toLocaleString('en-PH', { timeZone: 'Asia/Manila' });
+
+    const emailHtml = `
+<p style="color:#333;font-size:15px;">Dear <strong>${result.data.borrower_name}</strong>,</p>
+<p style="color:#555;font-size:14px;line-height:1.6;">Your booking request has been submitted successfully and is now <strong>pending approval</strong>.</p>
+<div style="background:#f8f9fa;border-radius:8px;padding:20px;margin:20px 0;border-left:4px solid #3b82f6;">
+  <h3 style="margin:0 0 15px;color:#1e3a5f;font-size:16px;">Booking Details</h3>
+  <table style="width:100%;font-size:14px;color:#555;">
+    <tr><td style="padding:8px 0;font-weight:600;width:140px;">Booking ID:</td><td style="font-family:monospace;font-weight:500;">${booking.booking_code}</td></tr>
+    <tr><td style="padding:8px 0;font-weight:600;">Equipment:</td><td>${equipment.name} (x${result.data.quantity})</td></tr>
+    <tr><td style="padding:8px 0;font-weight:600;">Department:</td><td>${result.data.department}</td></tr>
+    <tr><td style="padding:8px 0;font-weight:600;">Purpose:</td><td>${result.data.purpose}</td></tr>
+    <tr><td style="padding:8px 0;font-weight:600;">Borrow Date:</td><td>${borrowDate}</td></tr>
+    <tr><td style="padding:8px 0;font-weight:600;">Return Date:</td><td>${returnDate}</td></tr>
+  </table>
+</div>
+<div style="background:#eef4fb;border-radius:8px;padding:15px;margin:20px 0;">
+  <p style="color:#1e3a5f;font-size:14px;margin:0;">📍 You will receive an email once your booking is approved or rejected by the PMO admin. This typically takes 1-2 business days.</p>
+</div>`;
+
+    await sendEmail({
+      to: result.data.borrower_email,
+      subject: `📋 Booking Submitted - ${equipment.name} [${booking.booking_code}]`,
+      html: emailHtml,
+    });
+  } catch (e) {
+    console.error('Booking confirmation email error:', e);
+  }
 
   // Create notification for admins
   const serviceClient = await createServiceRoleClient();
@@ -128,6 +161,26 @@ export async function getUserBookings() {
   } catch (e) {
     console.error('getUserBookings exception:', e);
     return [];
+  }
+}
+
+export async function getBookingById(id: string) {
+  try {
+    const supabase = await createServerSupabaseClient();
+    const { data, error } = await supabase
+      .from('bookings')
+      .select('*, equipment(id, name, image_url, category_id), profiles:borrower_id(id, full_name, email, department)')
+      .eq('id', id)
+      .single();
+
+    if (error) {
+      console.error('getBookingById error:', error.message);
+      return null;
+    }
+    return data;
+  } catch (e) {
+    console.error('getBookingById exception:', e);
+    return null;
   }
 }
 
@@ -206,6 +259,83 @@ export async function updateBookingStatus(
     });
   }
 
+  // Send status change email with beautiful template
+  if (['approved', 'rejected', 'returned'].includes(status)) {
+    try {
+      const borrowDate = new Date(booking.borrow_date).toLocaleString('en-PH', { timeZone: 'Asia/Manila' });
+      const returnDate = new Date(booking.return_date).toLocaleString('en-PH', { timeZone: 'Asia/Manila' });
+
+      let emailHtml = '';
+      let subject = '';
+
+      if (status === 'approved') {
+        subject = `✅ Booking Approved - ${booking.equipment?.name} [${booking.booking_code}]`;
+        emailHtml = `
+<p style="color:#333;font-size:15px;">Dear <strong>${booking.borrower_name}</strong>,</p>
+<p style="color:#555;font-size:14px;line-height:1.6;">Your booking has been <strong style="color:#16a34a;">approved</strong>! Please collect the equipment from the PMO Office at your scheduled time.</p>
+<div style="background:#f8f9fa;border-radius:8px;padding:20px;margin:20px 0;border-left:4px solid #16a34a;">
+  <h3 style="margin:0 0 15px;color:#1e3a5f;font-size:16px;">Booking Details</h3>
+  <table style="width:100%;font-size:14px;color:#555;">
+    <tr><td style="padding:8px 0;font-weight:600;width:140px;">Booking ID:</td><td style="font-family:monospace;font-weight:500;">${booking.booking_code}</td></tr>
+    <tr><td style="padding:8px 0;font-weight:600;">Equipment:</td><td>${booking.equipment?.name} (x${booking.quantity})</td></tr>
+    <tr><td style="padding:8px 0;font-weight:600;">Borrow Date:</td><td>${borrowDate}</td></tr>
+    <tr><td style="padding:8px 0;font-weight:600;">Return Date:</td><td>${returnDate}</td></tr>
+  </table>
+</div>
+<div style="background:#f0fdf4;border:1px solid #86efac;border-radius:8px;padding:15px;margin:15px 0;">
+  <p style="color:#166534;font-size:14px;margin:0;">✅ <strong>Next Step:</strong> Present your FSUU ID at the PMO Office to collect the equipment.</p>
+</div>`;
+      } else if (status === 'rejected') {
+        subject = `❌ Booking Rejected - ${booking.equipment?.name} [${booking.booking_code}]`;
+        emailHtml = `
+<p style="color:#333;font-size:15px;">Dear <strong>${booking.borrower_name}</strong>,</p>
+<p style="color:#555;font-size:14px;line-height:1.6;">Unfortunately, your booking has been <strong style="color:#dc2626;">rejected</strong>.</p>
+<div style="background:#f8f9fa;border-radius:8px;padding:20px;margin:20px 0;border-left:4px solid #dc2626;">
+  <h3 style="margin:0 0 15px;color:#1e3a5f;font-size:16px;">Booking Details</h3>
+  <table style="width:100%;font-size:14px;color:#555;">
+    <tr><td style="padding:8px 0;font-weight:600;width:140px;">Booking ID:</td><td style="font-family:monospace;font-weight:500;">${booking.booking_code}</td></tr>
+    <tr><td style="padding:8px 0;font-weight:600;">Equipment:</td><td>${booking.equipment?.name} (x${booking.quantity})</td></tr>
+    <tr><td style="padding:8px 0;font-weight:600;">Borrow Date:</td><td>${borrowDate}</td></tr>
+    <tr><td style="padding:8px 0;font-weight:600;">Return Date:</td><td>${returnDate}</td></tr>
+  </table>
+</div>
+${adminNotes ? `<div style="background:#fef2f2;border:1px solid #fca5a5;border-radius:8px;padding:15px;margin:15px 0;">
+  <p style="color:#991b1b;font-size:14px;margin:0;"><strong>Reason:</strong> ${adminNotes}</p>
+</div>` : ''}
+<div style="background:#eef4fb;border-radius:8px;padding:15px;margin:20px 0;">
+  <p style="color:#1e3a5f;font-size:14px;margin:0;">📍 If you have questions, please visit the PMO Office.</p>
+</div>`;
+      } else if (status === 'returned') {
+        subject = `🔄 Equipment Returned - ${booking.equipment?.name} [${booking.booking_code}]`;
+        emailHtml = `
+<p style="color:#333;font-size:15px;">Dear <strong>${booking.borrower_name}</strong>,</p>
+<p style="color:#555;font-size:14px;line-height:1.6;">Your equipment return has been confirmed. Thank you for using the PMO Booking System!</p>
+<div style="background:#f8f9fa;border-radius:8px;padding:20px;margin:20px 0;border-left:4px solid #7c3aed;">
+  <h3 style="margin:0 0 15px;color:#1e3a5f;font-size:16px;">Return Confirmation</h3>
+  <table style="width:100%;font-size:14px;color:#555;">
+    <tr><td style="padding:8px 0;font-weight:600;width:140px;">Booking ID:</td><td style="font-family:monospace;font-weight:500;">${booking.booking_code}</td></tr>
+    <tr><td style="padding:8px 0;font-weight:600;">Equipment:</td><td>${booking.equipment?.name}</td></tr>
+    <tr><td style="padding:8px 0;font-weight:600;">Quantity:</td><td>${booking.quantity}</td></tr>
+    <tr><td style="padding:8px 0;font-weight:600;">Return Date:</td><td>${new Date().toLocaleString('en-PH')}</td></tr>
+  </table>
+</div>
+<div style="background:#f5f3ff;border:1px solid #c4b5fd;border-radius:8px;padding:15px;margin:15px 0;">
+  <p style="color:#5b21b6;font-size:14px;margin:0;">✅ Equipment returned successfully. Thank you!</p>
+</div>`;
+      }
+
+      if (emailHtml && subject) {
+        await sendEmail({
+          to: booking.borrower_email,
+          subject,
+          html: emailHtml,
+        });
+      }
+    } catch (e) {
+      console.error('Status change email error:', e);
+    }
+  }
+
   revalidatePath('/admin/bookings');
   revalidatePath('/dashboard');
   return { success: true };
@@ -222,12 +352,13 @@ export async function sendManualReminder(
   if (!user) return { error: 'Not authenticated' };
 
   // Verify admin
-  const { data: profile } = await supabase
+  const { data: adminProfile } = await supabase
     .from('profiles')
     .select('role')
     .eq('id', user.id)
     .single();
-  if (profile?.role !== 'admin') return { error: 'Not authorized — admin only' };
+
+  if (adminProfile?.role !== 'admin') return { error: 'Not authorized — admin only' };
 
   // Fetch booking with equipment and borrower details
   const { data: booking, error: bookingError } = await supabase
@@ -246,76 +377,43 @@ export async function sendManualReminder(
   const serviceClient = await createServiceRoleClient();
   const results: string[] = [];
 
-  // Send email directly via Resend API
+  // Send email via EmailJS
   if (method === 'email' || method === 'both') {
-    const resendApiKey = process.env.RESEND_API_KEY;
-    if (!resendApiKey || resendApiKey.startsWith('re_your')) {
-      results.push('Email skipped — RESEND_API_KEY not configured');
-    } else {
-      try {
-        const borrowDate = new Date(booking.borrow_date).toLocaleString('en-PH', { timeZone: 'Asia/Manila' });
-        const returnDate = new Date(booking.return_date).toLocaleString('en-PH', { timeZone: 'Asia/Manila' });
+    try {
+      const borrowDate = new Date(booking.borrow_date).toLocaleString('en-PH', { timeZone: 'Asia/Manila' });
+      const returnDate = new Date(booking.return_date).toLocaleString('en-PH', { timeZone: 'Asia/Manila' });
 
-        const emailHtml = `
-<!DOCTYPE html>
-<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"></head>
-<body style="margin:0;padding:0;font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;background:#f5f5f5;">
-  <div style="max-width:600px;margin:20px auto;background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 4px 6px rgba(0,0,0,.1);">
-    <div style="background:linear-gradient(135deg,#1e3a5f,#2d6ec5);padding:30px;text-align:center;">
-      <h1 style="color:#fff;margin:0;font-size:20px;">PMO Equipment Booking System</h1>
-      <p style="color:#d4e2f5;margin:5px 0 0;font-size:13px;">Father Saturnino Urios University</p>
-    </div>
-    <div style="background:#f59e0b;padding:15px;text-align:center;">
-      <h2 style="color:#fff;margin:0;font-size:18px;">🔔 Reminder from PMO Admin</h2>
-    </div>
-    <div style="padding:30px;">
-      <p style="color:#333;font-size:15px;">Dear <strong>${borrowerName}</strong>,</p>
-      <p style="color:#555;font-size:14px;line-height:1.6;">${message}</p>
-      <div style="background:#f8f9fa;border-radius:8px;padding:20px;margin:20px 0;border-left:4px solid #f59e0b;">
-        <h3 style="margin:0 0 15px;color:#1e3a5f;font-size:16px;">Booking Details</h3>
-        <table style="width:100%;font-size:14px;color:#555;">
-          <tr><td style="padding:5px 0;font-weight:600;width:140px;">Booking ID:</td><td style="font-family:monospace;">${booking.booking_code}</td></tr>
-          <tr><td style="padding:5px 0;font-weight:600;">Equipment:</td><td>${equipmentName} (x${booking.quantity})</td></tr>
-          <tr><td style="padding:5px 0;font-weight:600;">Borrow Date:</td><td>${borrowDate}</td></tr>
-          <tr><td style="padding:5px 0;font-weight:600;">Return Date:</td><td>${returnDate}</td></tr>
-        </table>
-      </div>
-      <div style="background:#fffbeb;border:1px solid #fcd34d;border-radius:8px;padding:15px;margin:15px 0;">
-        <p style="color:#92400e;font-size:14px;margin:0;">📍 If you have any questions, please visit or contact the PMO Office.</p>
-      </div>
-    </div>
-    <div style="background:#1e3a5f;padding:20px;text-align:center;">
-      <p style="color:#a9c5eb;font-size:12px;margin:0;">&copy; ${new Date().getFullYear()} Property Management Office — FSUU</p>
-      <p style="color:#7ea8e0;font-size:11px;margin:5px 0 0;">This is an automated reminder from the PMO Admin.</p>
-    </div>
-  </div>
-</body></html>`;
+      const emailHtml = `
+<p style="color:#333;font-size:15px;">Dear <strong>${borrowerName}</strong>,</p>
+<p style="color:#555;font-size:14px;line-height:1.6;">${message}</p>
+<div style="background:#f8f9fa;border-radius:8px;padding:20px;margin:20px 0;border-left:4px solid #f59e0b;">
+  <h3 style="margin:0 0 15px;color:#1e3a5f;font-size:16px;">Booking Details</h3>
+  <table style="width:100%;font-size:14px;color:#555;">
+    <tr><td style="padding:5px 0;font-weight:600;width:140px;">Booking ID:</td><td style="font-family:monospace;">${booking.booking_code}</td></tr>
+    <tr><td style="padding:5px 0;font-weight:600;">Equipment:</td><td>${equipmentName} (x${booking.quantity})</td></tr>
+    <tr><td style="padding:5px 0;font-weight:600;">Borrow Date:</td><td>${borrowDate}</td></tr>
+    <tr><td style="padding:5px 0;font-weight:600;">Return Date:</td><td>${returnDate}</td></tr>
+  </table>
+</div>
+<div style="background:#fffbeb;border:1px solid #fcd34d;border-radius:8px;padding:15px;margin:15px 0;">
+  <p style="color:#92400e;font-size:14px;margin:0;">📍 If you have any questions, please visit or contact the PMO Office.</p>
+</div>`;
 
-        const emailRes = await fetch('https://api.resend.com/emails', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${resendApiKey}`,
-          },
-          body: JSON.stringify({
-            from: process.env.EMAIL_FROM || 'PMO FSUU <onboarding@resend.dev>',
-            to: [borrowerEmail],
-            subject: `🔔 PMO Reminder - ${equipmentName} [${booking.booking_code}]`,
-            html: emailHtml,
-          }),
-        });
+      const emailRes = await sendEmail({
+        to: borrowerEmail,
+        subject: `🔔 PMO Reminder - ${equipmentName} [${booking.booking_code}]`,
+        html: emailHtml,
+      });
 
-        if (emailRes.ok) {
-          results.push(`Email sent to ${borrowerEmail}`);
-        } else {
-          const errText = await emailRes.text();
-          console.error('Resend error:', errText);
-          results.push('Email sending failed — check Resend API key');
-        }
-      } catch (e) {
-        console.error('Email error:', e);
-        results.push('Email sending failed');
+      if (emailRes.success) {
+        results.push(`Email sent to ${borrowerEmail}`);
+      } else {
+        console.error('Mail error:', emailRes.error);
+        results.push(`Email failed: ${emailRes.error}`);
       }
+    } catch (e) {
+      console.error('Email error:', e);
+      results.push('Email sending failed');
     }
   }
 

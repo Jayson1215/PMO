@@ -31,6 +31,7 @@ import {
   BarChart3,
   FileText,
   ChevronLeft,
+  QrCode,
 } from "lucide-react";
 import { signOut } from "@/actions/auth";
 import type { Profile } from "@/types/database";
@@ -45,6 +46,7 @@ interface SidebarProps {
 
 const adminNavItems = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/admin/scan", label: "Quick Scan", icon: QrCode },
   { href: "/admin/bookings", label: "Bookings", icon: ClipboardList },
   { href: "/admin/equipment", label: "Equipment", icon: Package },
   { href: "/admin/calendar", label: "Calendar", icon: Calendar },
@@ -63,6 +65,11 @@ export function DashboardShell({ user, children }: SidebarProps) {
   const pathname = usePathname();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const isAdmin = user.role === "admin";
   const navItems = isAdmin ? adminNavItems : borrowerNavItems;
@@ -241,48 +248,50 @@ export function DashboardShell({ user, children }: SidebarProps) {
         </nav>
 
         {/* User section */}
-        <div className="border-t p-3">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <button
-                className={cn(
-                  "flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors hover:bg-gray-100",
-                  collapsed && "justify-center px-0"
-                )}
-              >
-                <Avatar className="h-8 w-8 shrink-0">
-                  <AvatarFallback className="text-xs">
-                    {getInitials(user.full_name)}
-                  </AvatarFallback>
-                </Avatar>
-                {!collapsed && (
-                  <div className="truncate text-left">
-                    <p className="truncate text-sm font-medium">{user.full_name}</p>
-                    <p className="truncate text-xs text-muted-foreground capitalize">
-                      {user.role}
-                    </p>
-                  </div>
-                )}
-              </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56">
-              <DropdownMenuLabel>
-                <p className="font-medium">{user.full_name}</p>
-                <p className="text-xs font-normal text-muted-foreground">
-                  {user.email}
-                </p>
-              </DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem asChild>
-                <form action={signOut}>
-                  <button type="submit" className="flex w-full items-center gap-2">
-                    <LogOut className="h-4 w-4" />
-                    Sign out
-                  </button>
-                </form>
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+        <div className="border-t p-3 min-h-[64px]">
+          {mounted && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button
+                  className={cn(
+                    "flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors hover:bg-gray-100",
+                    collapsed && "justify-center px-0"
+                  )}
+                >
+                  <Avatar className="h-8 w-8 shrink-0">
+                    <AvatarFallback className="text-xs">
+                      {getInitials(user.full_name)}
+                    </AvatarFallback>
+                  </Avatar>
+                  {!collapsed && (
+                    <div className="truncate text-left">
+                      <p className="truncate text-sm font-medium">{user.full_name}</p>
+                      <p className="truncate text-xs text-muted-foreground capitalize">
+                        {user.role}
+                      </p>
+                    </div>
+                  )}
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuLabel>
+                  <p className="font-medium">{user.full_name}</p>
+                  <p className="text-xs font-normal text-muted-foreground">
+                    {user.email}
+                  </p>
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem asChild>
+                  <form action={signOut}>
+                    <button type="submit" className="flex w-full items-center gap-2">
+                      <LogOut className="h-4 w-4" />
+                      Sign out
+                    </button>
+                  </form>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
         </div>
       </aside>
 

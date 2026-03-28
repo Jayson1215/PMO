@@ -92,7 +92,7 @@ async function UserListContent() {
                     </TableCell>
                     <TableCell>
                       <Badge 
-                        variant={user.role === 'admin' ? 'fsuu' : 'outline'}
+                        variant={user.role === 'admin' ? 'default' : 'outline'}
                         className="capitalize"
                       >
                         {user.role}

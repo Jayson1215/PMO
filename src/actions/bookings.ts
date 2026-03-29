@@ -98,23 +98,27 @@ export async function createBooking(formData: FormData) {
     console.error('Booking confirmation email error:', e);
   }
 
-  // Create notification for admins
-  const serviceClient = await createServiceRoleClient();
-  const { data: admins } = await serviceClient
-    .from('profiles')
-    .select('id')
-    .eq('role', 'admin') as { data: { id: string }[] | null };
+  // Create notification for admins (non-critical — don't crash if it fails)
+  try {
+    const serviceClient = await createServiceRoleClient();
+    const { data: admins } = await serviceClient
+      .from('profiles')
+      .select('id')
+      .eq('role', 'admin') as { data: { id: string }[] | null };
 
-  if (admins) {
-    const notifications = admins.map((admin: { id: string }) => ({
-      booking_id: booking.id,
-      user_id: admin.id,
-      type: 'booking_confirmed' as const,
-      title: 'New Booking Request',
-      message: `${result.data.borrower_name} has requested to borrow ${equipment.name} (x${result.data.quantity})`,
-    }));
+    if (admins) {
+      const notifications = admins.map((admin: { id: string }) => ({
+        booking_id: booking.id,
+        user_id: admin.id,
+        type: 'booking_confirmed' as const,
+        title: 'New Booking Request',
+        message: `${result.data.borrower_name} has requested to borrow ${equipment.name} (x${result.data.quantity})`,
+      }));
 
-    await serviceClient.from('notifications').insert(notifications as any);
+      await serviceClient.from('notifications').insert(notifications as any);
+    }
+  } catch (e) {
+    console.error('Admin notification error (non-critical):', e);
   }
 
   revalidatePath('/dashboard');
@@ -228,35 +232,39 @@ export async function updateBookingStatus(
 
   if (error) return { error: error.message };
 
-  // Create notification for borrower
-  const serviceClient = await createServiceRoleClient();
-  const notificationMap: Partial<Record<BookingStatus, { title: string; message: string; type: NotificationType }>> = {
-    approved: {
-      title: 'Booking Approved',
-      message: `Your booking for ${booking.equipment?.name || 'equipment'} has been approved.`,
-      type: 'booking_approved',
-    },
-    rejected: {
-      title: 'Booking Rejected',
-      message: `Your booking for ${booking.equipment?.name || 'equipment'} has been rejected.${adminNotes ? ` Reason: ${adminNotes}` : ''}`,
-      type: 'booking_rejected',
-    },
-    returned: {
-      title: 'Equipment Returned',
-      message: `Equipment ${booking.equipment?.name || ''} has been marked as returned. Thank you!`,
-      type: 'returned',
-    },
-  };
+  // Create notification for borrower (non-critical — don't crash if it fails)
+  try {
+    const serviceClient = await createServiceRoleClient();
+    const notificationMap: Partial<Record<BookingStatus, { title: string; message: string; type: NotificationType }>> = {
+      approved: {
+        title: 'Booking Approved',
+        message: `Your booking for ${booking.equipment?.name || 'equipment'} has been approved.`,
+        type: 'booking_approved',
+      },
+      rejected: {
+        title: 'Booking Rejected',
+        message: `Your booking for ${booking.equipment?.name || 'equipment'} has been rejected.${adminNotes ? ` Reason: ${adminNotes}` : ''}`,
+        type: 'booking_rejected',
+      },
+      returned: {
+        title: 'Equipment Returned',
+        message: `Equipment ${booking.equipment?.name || ''} has been marked as returned. Thank you!`,
+        type: 'returned',
+      },
+    };
 
-  const notification = notificationMap[status];
-  if (notification) {
-    await serviceClient.from('notifications').insert({
-      booking_id: bookingId,
-      user_id: booking.borrower_id,
-      type: notification.type,
-      title: notification.title,
-      message: notification.message,
-    });
+    const notification = notificationMap[status];
+    if (notification) {
+      await serviceClient.from('notifications').insert({
+        booking_id: bookingId,
+        user_id: booking.borrower_id,
+        type: notification.type,
+        title: notification.title,
+        message: notification.message,
+      });
+    }
+  } catch (e) {
+    console.error('Borrower notification error (non-critical):', e);
   }
 
   // Send status change email with beautiful template
@@ -374,7 +382,12 @@ export async function sendManualReminder(
   const equipmentName = (booking.equipment as any)?.name || 'Equipment';
   const contactNumber = (booking.profiles as any)?.contact_number;
 
-  const serviceClient = await createServiceRoleClient();
+  let serviceClient: any = null;
+  try {
+    serviceClient = await createServiceRoleClient();
+  } catch (e) {
+    console.error('Service role client error (non-critical):', e);
+  }
   const results: string[] = [];
 
   // Send email via EmailJS
@@ -455,15 +468,21 @@ export async function sendManualReminder(
   }
 
   // Always create an in-app notification for the borrower
-  await serviceClient.from('notifications').insert({
-    booking_id: bookingId,
-    user_id: booking.borrower_id,
-    type: 'reminder_15min' as any,
-    title: 'Reminder from PMO Admin',
-    message: message || `Reminder about your booking for ${equipmentName} (${booking.booking_code}).`,
-    email_sent: results.some(r => r.startsWith('Email sent')),
-    email_sent_at: results.some(r => r.startsWith('Email sent')) ? new Date().toISOString() : null,
-  });
+  if (serviceClient) {
+    try {
+      await serviceClient.from('notifications').insert({
+        booking_id: bookingId,
+        user_id: booking.borrower_id,
+        type: 'reminder_15min' as any,
+        title: 'Reminder from PMO Admin',
+        message: message || `Reminder about your booking for ${equipmentName} (${booking.booking_code}).`,
+        email_sent: results.some(r => r.startsWith('Email sent')),
+        email_sent_at: results.some(r => r.startsWith('Email sent')) ? new Date().toISOString() : null,
+      });
+    } catch (e) {
+      console.error('Notification insert error (non-critical):', e);
+    }
+  }
 
   revalidatePath('/admin/bookings');
   revalidatePath('/dashboard');

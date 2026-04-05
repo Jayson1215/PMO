@@ -1,3 +1,10 @@
+/**
+ * EMAIL UTILITY (mail.ts)
+ * -----------------------
+ * Functionality: Sends automated emails (reminders, status updates) to users.
+ * Connection: Integrates with the External EmailJS API using environment variables.
+ */
+
 interface SendEmailOptions {
   to: string | string[];
   subject: string;
@@ -5,7 +12,9 @@ interface SendEmailOptions {
 }
 
 /**
- * Sends an email using the EmailJS REST API with HTML content
+ * SEND EMAIL
+ * Functionality: Formats and pushes an email request to the EmailJS cloud service.
+ * Connection: Triggered by 'bookings.ts' whenever a booking status changes.
  */
 export async function sendEmail({ to, subject, html }: SendEmailOptions) {
   try {

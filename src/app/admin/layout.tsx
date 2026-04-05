@@ -1,3 +1,9 @@
+/**
+ * ADMIN LAYOUT (admin/layout.tsx)
+ * ------------------------------
+ * Functionality: The sidebar and navigation shell for all Admin pages.
+ * Connection: Wraps all pages in the /admin subfolder with security checks.
+ */
 export const dynamic = 'force-dynamic';
 
 import { redirect } from "next/navigation";

@@ -1,3 +1,9 @@
+/**
+ * ADMIN ANALYTICS (admin/analytics/page.tsx)
+ * -----------------------------------------
+ * Functionality: Visualizes system performance, equipment usage, and popular departments.
+ * Connection: Aggregates data from 'getBookings' and 'getBookingStats' actions.
+ */
 import { Suspense } from "react";
 import { getBookingStats, getBookings } from "@/actions/bookings";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -9,6 +15,12 @@ async function AnalyticsContent() {
     getBookingStats(),
     getBookings(),
   ]);
+  
+  /**
+   * DATA PROCESSING LOGIC
+   * Functionality: Loops through the database results to count statuses and department usage.
+   * Connection: These values are then rendered in the Bar charts below.
+   */
 
   // Calculate simple analytics
   const statusCounts: Record<string, number> = {};
@@ -18,7 +30,7 @@ async function AnalyticsContent() {
 
   const departmentCounts: Record<string, number> = {};
   bookings?.forEach((b: any) => {
-    const dept = b.department || b.organization || "Unspecified";
+    const dept = b.department || "Unspecified";
     departmentCounts[dept] = (departmentCounts[dept] || 0) + 1;
   });
 
@@ -146,7 +158,7 @@ async function AnalyticsContent() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <TrendingUp className="h-5 w-5 text-emerald-500" />
-              Top Borrowing Departments/Organizations
+              Top Borrowing Departments
             </CardTitle>
           </CardHeader>
           <CardContent>

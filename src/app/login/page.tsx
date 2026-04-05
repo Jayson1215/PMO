@@ -1,3 +1,15 @@
+/**
+ * LOGIN PAGE (login/page.tsx)
+ * --------------------------
+ * Functionality: Main entry port for borrowers and admins to access the system.
+ * Connection: Submits user credentials to 'signIn' in auth.ts.
+ */
+/**
+ * REGISTRATION PAGE (register/page.tsx)
+ * ------------------------------------
+ * Functionality: Allows new users (Students/Faculty) to create an account.
+ * Connection: Connects to 'signUp' in auth.ts and uses 'registerSchema' for validation.
+ */
 "use client";
 
 import { useState } from "react";
@@ -16,16 +28,31 @@ import {
 } from "@/components/ui/card";
 import { Monitor, Loader2, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
+import { TwoFactorVerify } from "@/components/auth/TwoFactorVerify";
 
 export default function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [mfaRequired, setMfaRequired] = useState(false);
+  const [mfaEmail, setMfaEmail] = useState("");
 
+  /**
+   * LOGIN SUBMISSION
+   * Functionality: Sends user email and password to the server.
+   * Connection: Calls 'signIn' action in auth.ts.
+   */
   async function handleSubmit(formData: FormData) {
     setLoading(true);
     setError(null);
     try {
       const result = await signIn(formData);
+      
+      if (result && 'mfaRequired' in result) {
+        setMfaRequired(true);
+        setMfaEmail(result.email || "");
+        return;
+      }
+
       if (result?.error) {
         setError(result.error);
         toast.error(result.error);
@@ -33,13 +60,21 @@ export default function LoginPage() {
     } catch (e) {
       // redirect() from server action throws NEXT_REDIRECT — that's expected on success
       const message = e instanceof Error ? e.message : 'Something went wrong';
-      if (!message.includes('NEXT_REDIRECT')) {
+      if (!message.includes('NEXT_REDIRECT') && !message.includes('NEXT_JS_REDIRECT')) {
         setError(message);
         toast.error(message);
       }
     } finally {
       setLoading(false);
     }
+  }
+
+  if (mfaRequired) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-fsuu-blue-900 via-fsuu-blue-800 to-fsuu-blue-700 p-4 font-sans">
+        <TwoFactorVerify email={mfaEmail} />
+      </div>
+    );
   }
 
   return (

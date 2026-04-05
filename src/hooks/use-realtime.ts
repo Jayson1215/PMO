@@ -1,11 +1,18 @@
+/**
+ * REAL-TIME HOOKS (use-realtime.ts)
+ * --------------------------------
+ * Functionality: Listens for live changes in the database and updates the UI instantly.
+ * Connection: Connects to Supabase 'Postgres Changes' to detect new bookings or notifications.
+ */
 'use client';
-
 import { useEffect, useState } from 'react';
 import { createBrowserClient } from '@/lib/supabase/client';
 import type { RealtimeChannel } from '@supabase/supabase-js';
 
 /**
- * Hook to subscribe to real-time booking updates
+ * REAL-TIME BOOKINGS
+ * Functionality: Updates the booking table immediately when an admin approves/rejects a request.
+ * Connection: Listens for any change in the 'bookings' table.
  */
 export function useRealtimeBookings(userId?: string, isAdmin = false) {
   const [channel, setChannel] = useState<RealtimeChannel | null>(null);

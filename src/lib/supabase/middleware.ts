@@ -1,7 +1,18 @@
+/**
+ * SUPABASE MIDDLEWARE (supabase/middleware.ts)
+ * -------------------------------------------
+ * Functionality: Moniters every page request to keep the user's login session active.
+ * Connection: Runs before any page is loaded to refresh the Supabase Auth token.
+ */
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
+/**
+ * UPDATE SESSION
+ * Functionality: Checks if the user's token is about to expire and refreshes it.
+ * Connection: Returns the updated Response with new session cookies.
+ */
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request });
 

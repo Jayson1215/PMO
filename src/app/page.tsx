@@ -11,6 +11,12 @@ import {
   Users,
 } from "lucide-react";
 
+/**
+ * LANDING PAGE (page.tsx)
+ * -----------------------
+ * Functionality: The first page users see (Hero section, features, and login links).
+ * Connection: Links to /login and /register pages.
+ */
 export default function HomePage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-fsuu-blue-900 via-fsuu-blue-800 to-fsuu-blue-700">
@@ -53,7 +59,7 @@ export default function HomePage() {
           </h1>
           <p className="mb-10 text-lg text-fsuu-blue-200">
             A centralized web system for the Property Management Office that
-            allows Faculty, Staff, and Student Organizations to borrow and
+            allows Faculty, Staff, and Students to borrow and
             reserve university equipment with ease.
           </p>
           <div className="flex flex-col items-center gap-4 sm:flex-row sm:justify-center">

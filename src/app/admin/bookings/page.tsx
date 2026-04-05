@@ -1,3 +1,9 @@
+/**
+ * ADMIN BOOKINGS PAGE (admin/bookings/page.tsx)
+ * -------------------------------------------
+ * Functionality: Main interface for admins to review, approve, and reject equipment requests.
+ * Connection: Fetches all bookings from the database and uses 'BookingActions' for status updates.
+ */
 import { Suspense } from "react";
 import { getBookings } from "@/actions/bookings";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -8,6 +14,11 @@ import { BookingActions } from "@/components/admin/booking-actions";
 import { formatDateTime } from "@/lib/utils";
 import { ClipboardList } from "lucide-react";
 
+/**
+ * BOOKING LIST LOADER
+ * Functionality: Safely retrieves the full list of requests from the server.
+ * Connection: Connects to 'getBookings' action.
+ */
 async function BookingsContent() {
   const bookings = await getBookings();
 

@@ -1,8 +1,19 @@
+/**
+ * USER MANAGEMENT ACTIONS (users.ts)
+ * ---------------------------------
+ * Functionality: Admins use this to view registered users, change roles, and manage accounts.
+ * Connection: Modifies the 'profiles' table and uses Admin API for 'auth.users' deletion.
+ */
 'use server';
 
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 
+/**
+ * FETCH ALL USERS (Admin Only)
+ * Functionality: Returns a full list of all registered Borrowers and Admins.
+ * Connection: Queries the 'profiles' table securely.
+ */
 export async function getAllUsers() {
   try {
     const supabase = await createServerSupabaseClient();
@@ -36,6 +47,11 @@ export async function getAllUsers() {
   }
 }
 
+/**
+ * UPDATE USER ROLE
+ * Functionality: Promotes a User to Admin or demotes them back to Borrower.
+ * Connection: Updates the 'role' column in the 'profiles' table.
+ */
 export async function updateUserRole(userId: string, role: 'admin' | 'borrower') {
   try {
     const supabase = await createServerSupabaseClient();
@@ -67,6 +83,11 @@ export async function updateUserRole(userId: string, role: 'admin' | 'borrower')
   }
 }
 
+/**
+ * DELETE USER ACCOUNT
+ * Functionality: Permanently removes a user from the entire system.
+ * Connection: Uses the 'service_role' (Admin) client to remove the user from Supabase Auth.
+ */
 export async function deleteUser(userId: string) {
   try {
     const supabase = await createServerSupabaseClient();

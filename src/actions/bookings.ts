@@ -1,3 +1,9 @@
+/**
+ * BOOKING ACTIONS (bookings.ts)
+ * ----------------------------
+ * Functionality: Manages the lifecycle of equipment reservations (Create, Approve, Return).
+ * Connection: Connects 'equipment' (inventory), 'profiles' (users), and 'bookings' tables.
+ */
 'use server';
 
 import { createServerSupabaseClient, createServiceRoleClient } from '@/lib/supabase/server';
@@ -5,7 +11,13 @@ import { bookingSchema } from '@/lib/validations';
 import { revalidatePath } from 'next/cache';
 import type { BookingStatus, NotificationType } from '@/types/database';
 import { sendEmail } from '@/lib/mail';
+import { cache } from 'react';
 
+/**
+ * CREATE BOOKING
+ * Functionality: Submits a new reservation request.
+ * Connection: Performs real-time inventory checks using 'check_booking_overlap' RPC.
+ */
 export async function createBooking(formData: FormData) {
   const supabase = await createServerSupabaseClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -18,7 +30,6 @@ export async function createBooking(formData: FormData) {
     borrower_name: formData.get('borrower_name') as string,
     borrower_email: formData.get('borrower_email') as string,
     department: formData.get('department') as string,
-    organization: formData.get('organization') as string,
     purpose: formData.get('purpose') as string,
     borrow_date: formData.get('borrow_date') as string,
     return_date: formData.get('return_date') as string,
@@ -126,7 +137,12 @@ export async function createBooking(formData: FormData) {
   return { success: true, booking };
 }
 
-export async function getBookings(status?: BookingStatus) {
+/**
+ * GET ALL BOOKINGS (Admin Only)
+ * Functionality: Fetch all reservation records for the management table.
+ */
+export const getBookings = cache(async function getBookings(status?: BookingStatus) {
+
   try {
     const supabase = await createServerSupabaseClient();
     let query = supabase
@@ -145,9 +161,13 @@ export async function getBookings(status?: BookingStatus) {
     console.error('getBookings exception:', e);
     return [];
   }
-}
+});
 
-export async function getUserBookings() {
+
+
+
+export const getUserBookings = cache(async function getUserBookings() {
+
   try {
     const supabase = await createServerSupabaseClient();
     const { data: { user } } = await supabase.auth.getUser();
@@ -166,9 +186,12 @@ export async function getUserBookings() {
     console.error('getUserBookings exception:', e);
     return [];
   }
-}
+});
 
-export async function getBookingById(id: string) {
+
+
+export const getBookingById = cache(async function getBookingById(id: string) {
+
   try {
     const supabase = await createServerSupabaseClient();
     const { data, error } = await supabase
@@ -186,8 +209,15 @@ export async function getBookingById(id: string) {
     console.error('getBookingById exception:', e);
     return null;
   }
-}
+});
 
+
+
+/**
+ * UPDATE BOOKING STATUS
+ * Functionality: PMO Admins use this to Approve or Reject requests.
+ * Connection: Triggers 'on_booking_status_change' in the database to update equipment count.
+ */
 export async function updateBookingStatus(
   bookingId: string,
   status: BookingStatus,
@@ -508,7 +538,8 @@ export async function cancelBooking(bookingId: string) {
   return { success: true };
 }
 
-export async function getBookingStats() {
+export const getBookingStats = cache(async function getBookingStats() {
+
   const defaultStats = { totalEquipment: 0, activeBookings: 0, overdueBookings: 0, pendingBookings: 0, totalBookings: 0, lowInventory: [] as any[] };
   try {
     const supabase = await createServerSupabaseClient();
@@ -552,7 +583,9 @@ export async function getBookingStats() {
     console.error('getBookingStats exception:', e);
     return defaultStats;
   }
-}
+});
+
+
 
 export async function getCalendarBookings(startDate: string, endDate: string) {
   try {

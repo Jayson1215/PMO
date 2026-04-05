@@ -1,3 +1,9 @@
+/**
+ * BOOKING FORM COMPONENT (booking-form.tsx)
+ * -----------------------------------------
+ * Functionality: Interactive form used by students to select equipment and schedule a borrow date.
+ * Connection: Submits validated data to the 'createBooking' server action.
+ */
 "use client";
 
 import { useState, useTransition } from "react";
@@ -43,6 +49,11 @@ export function BookingForm({ equipment, user }: BookingFormProps) {
     (e) => e.status === "available" && e.available_quantity > 0
   );
 
+  /**
+   * SUBMISSION HANDLER
+   * Functionality: Adjusts the date for Philippines Timezone (+08:00) before sending to database.
+   * Connection: Communicates with 'bookings.ts' and triggers the Success Dialog upon completion.
+   */
   function handleSubmit(formData: FormData) {
     // Append Philippines timezone offset (+08:00) to datetime-local values
     // so the server stores the correct absolute time in TIMESTAMPTZ
@@ -167,15 +178,6 @@ export function BookingForm({ equipment, user }: BookingFormProps) {
                     name="department"
                     defaultValue={user.department || ""}
                     placeholder="e.g., College of IT"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="organization">Organization</Label>
-                  <Input
-                    id="organization"
-                    name="organization"
-                    defaultValue={user.organization || ""}
-                    placeholder="e.g., Student Council"
                   />
                 </div>
               </div>

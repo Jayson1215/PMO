@@ -1,5 +1,10 @@
+/**
+ * HELPER HOOKS (use-helpers.ts)
+ * ----------------------------
+ * Functionality: Reusable logic for UI components, such as Auth state and Mobile detection.
+ * Connection: Provides shared logic to many Sidebar and Settings components.
+ */
 'use client';
-
 import { useEffect, useState, useCallback } from 'react';
 import { createBrowserClient } from '@/lib/supabase/client';
 import type { User } from '@supabase/supabase-js';
@@ -13,7 +18,9 @@ interface AuthState {
 }
 
 /**
- * Hook to manage authentication state client-side
+ * AUTH HOOK (useAuth)
+ * Functionality: Automatically tracks if a user is logged in or is an Admin.
+ * Connection: Syncs with Supabase Auth to provide real-time profile data to the UI.
  */
 export function useAuth(): AuthState {
   const [user, setUser] = useState<User | null>(null);
@@ -73,7 +80,8 @@ export function useAuth(): AuthState {
 }
 
 /**
- * Hook for debounced values
+ * DEBOUNCE HOOK
+ * Functionality: Delays updating a value (like search input) to save on performance.
  */
 export function useDebounce<T>(value: T, delay: number): T {
   const [debouncedValue, setDebouncedValue] = useState(value);
@@ -87,7 +95,8 @@ export function useDebounce<T>(value: T, delay: number): T {
 }
 
 /**
- * Hook to detect media queries (mobile responsive)
+ * MEDIA QUERY HOOK
+ * Functionality: Detects screen size (Mobile vs Desktop) to change layouts.
  */
 export function useMediaQuery(query: string): boolean {
   const [matches, setMatches] = useState(false);
@@ -141,7 +150,9 @@ export function useLocalStorage<T>(key: string, initialValue: T) {
 }
 
 /**
- * Hook for countdown timer (used for return deadlines)
+ * COUNTDOWN HOOK
+ * Functionality: Shows a live ticking clock until the equipment return deadline.
+ * Connection: Connects to 'return_date' in the bookings database.
  */
 export function useCountdown(targetDate: string | Date) {
   const [timeLeft, setTimeLeft] = useState('');

@@ -1,3 +1,9 @@
+/**
+ * BORROWER DASHBOARD (dashboard/page.tsx)
+ * --------------------------------------
+ * Functionality: The central hub for students and faculty to view their current activities.
+ * Connection: Fetches active bookings and equipment stats from 'bookings.ts'.
+ */
 import { Suspense } from "react";
 import Link from "next/link";
 import { getUserBookings } from "@/actions/bookings";
@@ -24,6 +30,11 @@ import {
   AlertTriangle,
 } from "lucide-react";
 
+/**
+ * DASHBOARD CONTENT LOADER
+ * Functionality: Fetches all data needed for the user dashboard dashboard dynamically.
+ * Connection: Links to Supabase via 'getCurrentUser' and 'getUserBookings'.
+ */
 async function BorrowerDashboardContent() {
   const [user, bookings] = await Promise.all([
     getCurrentUser(),

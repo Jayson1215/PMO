@@ -1,3 +1,9 @@
+/**
+ * REGISTRATION PAGE (register/page.tsx)
+ * ------------------------------------
+ * Functionality: Allows new users (Students/Faculty) to create an account.
+ * Connection: Connects to 'signUp' in auth.ts and uses 'registerSchema' for validation.
+ */
 "use client";
 
 import { useState } from "react";
@@ -22,6 +28,11 @@ export default function RegisterPage() {
   const [success, setSuccess] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
+  /**
+   * REGISTRATION HANDLER
+   * Functionality: Validates form input and creates a new user profile.
+   * Connection: Communicates with Supabase Auth via the 'signUp' server action.
+   */
   async function handleSubmit(formData: FormData) {
     setLoading(true);
     setError(null);
@@ -129,7 +140,7 @@ export default function RegisterPage() {
                   />
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="department">Department</Label>
                   <Input
@@ -140,23 +151,14 @@ export default function RegisterPage() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="organization">Organization</Label>
+                  <Label htmlFor="contactNumber">Contact Number</Label>
                   <Input
-                    id="organization"
-                    name="organization"
-                    placeholder="e.g., CSSO"
+                    id="contactNumber"
+                    name="contactNumber"
+                    placeholder="09XX XXX XXXX"
                     disabled={loading}
                   />
                 </div>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="contactNumber">Contact Number</Label>
-                <Input
-                  id="contactNumber"
-                  name="contactNumber"
-                  placeholder="09XX XXX XXXX"
-                  disabled={loading}
-                />
               </div>
               <Button
                 type="submit"

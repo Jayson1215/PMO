@@ -22,12 +22,13 @@ export interface Database {
           full_name: string;
           role: UserRole;
           department: string | null;
-          organization: string | null;
           contact_number: string | null;
           avatar_url: string | null;
           is_active: boolean;
           created_at: string;
           updated_at: string;
+          two_factor_secret: string | null;
+          two_factor_enabled: boolean;
         };
         Insert: {
           id: string;
@@ -35,12 +36,13 @@ export interface Database {
           full_name: string;
           role?: UserRole;
           department?: string | null;
-          organization?: string | null;
           contact_number?: string | null;
           avatar_url?: string | null;
           is_active?: boolean;
           created_at?: string;
           updated_at?: string;
+          two_factor_secret?: string | null;
+          two_factor_enabled?: boolean;
         };
         Update: {
           id?: string;
@@ -48,11 +50,12 @@ export interface Database {
           full_name?: string;
           role?: UserRole;
           department?: string | null;
-          organization?: string | null;
           contact_number?: string | null;
           avatar_url?: string | null;
           is_active?: boolean;
           updated_at?: string;
+          two_factor_secret?: string | null;
+          two_factor_enabled?: boolean;
         };
         Relationships: [];
       };
@@ -144,7 +147,6 @@ export interface Database {
           borrower_name: string;
           borrower_email: string;
           department: string | null;
-          organization: string | null;
           purpose: string;
           borrow_date: string;
           return_date: string;
@@ -173,7 +175,6 @@ export interface Database {
           borrower_name: string;
           borrower_email: string;
           department?: string | null;
-          organization?: string | null;
           purpose: string;
           borrow_date: string;
           return_date: string;
@@ -195,7 +196,6 @@ export interface Database {
           borrower_name?: string;
           borrower_email?: string;
           department?: string | null;
-          organization?: string | null;
           purpose?: string;
           borrow_date?: string;
           return_date?: string;

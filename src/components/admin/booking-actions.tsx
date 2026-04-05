@@ -329,7 +329,7 @@ export function BookingActions({ booking }: BookingActionsProps) {
                 <div>
                   <p className="text-xs text-muted-foreground">Department</p>
                   <p className="text-sm font-medium">
-                    {booking.department || booking.organization || "N/A"}
+                    {booking.department || "N/A"}
                   </p>
                 </div>
               </div>

@@ -1,9 +1,20 @@
+/**
+ * EQUIPMENT ACTIONS (equipment.ts)
+ * -------------------------------
+ * Functionality: Manages the university's inventory of equipment (Projectors, Cables, etc.).
+ * Connection: Interacts with 'equipment' and 'equipment_categories' tables, and Supabase Storage for images.
+ */
 'use server';
 
 import { createServerSupabaseClient, createServiceRoleClient } from '@/lib/supabase/server';
 import { equipmentSchema } from '@/lib/validations';
 import { revalidatePath } from 'next/cache';
 
+/**
+ * FETCH EQUIPMENT
+ * Functionality: Retrieves a list of all equipment available for borrowing.
+ * Connection: Joins with 'equipment_categories' to provide human-readable category names.
+ */
 export async function getEquipment(includeArchived = false) {
   try {
     const supabase = await createServerSupabaseClient();
@@ -58,6 +69,11 @@ export async function getCategories() {
   }
 }
 
+/**
+ * CREATE EQUIPMENT (Admin Only)
+ * Functionality: Adds a new item to the permanent inventory.
+ * Connection: Validates input with 'equipmentSchema' before inserting into the database.
+ */
 export async function createEquipment(formData: FormData) {
   const supabase = await createServerSupabaseClient();
 
@@ -148,6 +164,11 @@ export async function archiveEquipment(id: string) {
   return { success: true };
 }
 
+/**
+ * UPLOAD EQUIPMENT IMAGE
+ * Functionality: Uploads a photo of the equipment to the cloud.
+ * Connection: Saves the file in 'equipment-images' storage bucket and links the URL to the record.
+ */
 export async function uploadEquipmentImage(equipmentId: string, formData: FormData) {
   const supabase = await createServerSupabaseClient();
   const file = formData.get('image') as File;

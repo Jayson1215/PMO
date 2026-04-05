@@ -1,9 +1,15 @@
+/**
+ * QR CODE UTILITY (qrcode.ts)
+ * --------------------------
+ * Functionality: Converts text or links into scan-able icons (QR Codes).
+ * Connection: Used in 'auth.ts' for 2FA setup and potentially for scanning bookings.
+ */
 import QRCode from 'qrcode';
 
 /**
- * Generates a Base64 data URL for a QR code
- * @param text The string to encode in the QR code (usually the booking ID or code)
- * @returns Promise<string> Data URL
+ * GENERATE QR CODE
+ * Functionality: Takes a string and returns a Base64 image that can be displayed in UI.
+ * Connection: Connects to the 'qrcode' library for high-quality image generation.
  */
 export async function generateQRCode(text: string): Promise<string> {
   try {

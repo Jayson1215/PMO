@@ -1,10 +1,25 @@
+/**
+ * UTILITY FUNCTIONS (utils.ts)
+ * ----------------------------
+ * Functionality: General helpers for formatting dates, colors, and strings.
+ * Connection: Used by almost every UI component for consistent display.
+ */
 import { type ClassValue, clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
 
+/**
+ * CLASS MERGER (cn)
+ * Functionality: Combines Tailwind CSS classes and handles conditional styling.
+ */
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
+/**
+ * DATE FORMATTER
+ * Functionality: Converts database dates into a readable Philippines format (e.g., January 1, 2024).
+ * Connection: Used in Tables and Detail views.
+ */
 export function formatDate(date: string | Date): string {
   return new Intl.DateTimeFormat('en-PH', {
     year: 'numeric',

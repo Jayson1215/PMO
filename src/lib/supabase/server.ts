@@ -1,8 +1,19 @@
+/**
+ * SUPABASE SERVER CONFIG (supabase/server.ts)
+ * -----------------------------------------
+ * Functionality: Creates secure connections to the Supabase database from the Server.
+ * Connection: Used by 'actions' and 'middleware' to read/write data securely.
+ */
 import { createServerClient } from '@supabase/ssr';
 import { createClient } from '@supabase/supabase-js';
 import { cookies } from 'next/headers';
 import type { Database } from '@/types/database';
 
+/**
+ * SERVER CLIENT
+ * Functionality: Creates a client for normal user operations (fetching profile, booking).
+ * Connection: Correctly handles browser Cookies for user sessions.
+ */
 export async function createServerSupabaseClient() {
   const cookieStore = await cookies();
 
@@ -35,6 +46,11 @@ export async function createServerSupabaseClient() {
   );
 }
 
+/**
+ * ADMIN CLIENT (SERVICE ROLE)
+ * Functionality: Grants bypass permissions (Overriding Row Level Security).
+ * Connection: Used for sensitive tasks like deleting user accounts or bulk updates.
+ */
 export async function createServiceRoleClient() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;

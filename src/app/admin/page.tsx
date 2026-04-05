@@ -1,3 +1,9 @@
+/**
+ * ADMIN DASHBOARD (admin/page.tsx)
+ * -------------------------------
+ * Functionality: High-level overview of system health, inventory levels, and recent activity.
+ * Connection: Fetches real-time status counts and latest 8 bookings.
+ */
 import { Suspense } from "react";
 import {
   Package,
@@ -21,6 +27,11 @@ import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { formatDateTime } from "@/lib/utils";
 import Link from "next/link";
 
+/**
+ * DASHBOARD DATA LOADER
+ * Functionality: Fetches all critical stats (Total Equipment, Overdue, Pending) in one go.
+ * Connection: Uses 'getBookingStats' and a direct Supabase query for performance.
+ */
 async function AdminDashboardContent() {
   const supabase = await createServerSupabaseClient();
   const [stats, { data: recentBookings }] = await Promise.all([

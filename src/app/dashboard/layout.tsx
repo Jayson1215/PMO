@@ -1,4 +1,5 @@
-export const dynamic = 'force-dynamic';
+// Dynamic rendering is handled automatically by the use of cookies/headers in getCurrentUser
+
 
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/actions/auth";

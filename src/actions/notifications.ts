@@ -1,9 +1,20 @@
+/**
+ * NOTIFICATION ACTIONS (notifications.ts)
+ * -------------------------------------
+ * Functionality: Manages user alerts for booking approvals, rejections, and reminders.
+ * Connection: Reads and updates the 'notifications' table for the current user.
+ */
 'use server';
 
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 import type { Notification } from '@/types/database';
 
+/**
+ * FETCH NOTIFICATIONS
+ * Functionality: Gets the most recent 50 alerts for the logged-in user.
+ * Connection: Directly queries the 'notifications' table based on User ID.
+ */
 export async function getNotifications(): Promise<{ data: Notification[] }> {
   try {
     const supabase = await createServerSupabaseClient();
@@ -46,6 +57,11 @@ export async function getUnreadCount() {
   }
 }
 
+/**
+ * MARK AS READ
+ * Functionality: Updates an alert status so it no longer appears as 'new'.
+ * Connection: Syncs with the UI via 'revalidatePath' to update the notification bell icon.
+ */
 export async function markNotificationRead(notificationId: string) {
   const supabase = await createServerSupabaseClient();
   const { error } = await supabase

@@ -66,7 +66,6 @@ async function UserListContent() {
                         </Avatar>
                         <div>
                           <p className="font-medium text-gray-900">{user.full_name}</p>
-                          <p className="text-xs text-muted-foreground">{user.organization || 'Internal'}</p>
                         </div>
                       </div>
                     </TableCell>

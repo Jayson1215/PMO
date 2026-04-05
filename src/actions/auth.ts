@@ -1,3 +1,9 @@
+/**
+ * AUTHENTICATION ACTIONS (auth.ts)
+ * -----------------------------
+ * Functionality: Handles user sessions, login/logout, and Two-Factor Authentication (2FA).
+ * Connection: Integrates Supabase Auth with our custom 'profiles' database table.
+ */
 'use server';
 
 
@@ -5,7 +11,20 @@ import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { loginSchema, registerSchema } from '@/lib/validations';
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
+import { generateSecret, verify, generateURI } from 'otplib';
+import { generateQRCode } from '@/lib/qrcode';
+import { cookies } from 'next/headers';
+import { cache } from 'react';
 
+// Otplib v13 uses a functional API for better tree-shaking and multi-runtime support
+
+
+
+/**
+ * SIGN IN FUNCTIONality
+ * Verification: Uses Supabase Auth to check email/password.
+ * Connection: Redirects users to Dashboard or Admin page based on their role.
+ */
 export async function signIn(formData: FormData) {
   const rawData = {
     email: formData.get('email') as string,
@@ -27,14 +46,18 @@ export async function signIn(formData: FormData) {
     return { error: error.message };
   }
 
-  // Use data from login directly instead of calling getUser() again
   const user = data.user;
   if (user) {
+    // Check if 2FA is enabled for this user
     const { data: profile } = await supabase
       .from('profiles')
-      .select('role')
+      .select('role, two_factor_enabled')
       .eq('id', user.id)
       .single();
+
+    if (profile?.two_factor_enabled) {
+      return { mfaRequired: true, email: result.data.email };
+    }
 
     const redirectPath = (profile as any)?.role === 'admin' ? '/admin' : '/dashboard';
     revalidatePath('/', 'layout');
@@ -44,6 +67,133 @@ export async function signIn(formData: FormData) {
   redirect('/dashboard');
 }
 
+/**
+ * 2FA LOGIN VERIFICATION
+ * Functionality: Validates the 6-digit TOTP code during login.
+ * Connection: Fetches the 'two_factor_secret' from the 'profiles' table.
+ */
+export async function verify2FALogin(email: string, code: string) {
+  const supabase = await createServerSupabaseClient();
+  
+  // Get the user profile to get the secret
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('id, role, two_factor_secret')
+    .eq('email', email)
+    .single();
+
+  if (!profile || !profile.two_factor_secret) {
+    return { error: 'Invalid authentication state' };
+  }
+
+  const result = await verify({
+    token: code,
+    secret: profile.two_factor_secret,
+  });
+  
+  const isValid = result.valid;
+
+
+  if (!isValid) {
+    // If invalid, sign out the user because they were technically signed in by signInWithPassword
+    await supabase.auth.signOut();
+    return { error: 'Invalid security code. Please try again.' };
+  }
+
+  const redirectPath = profile.role === 'admin' ? '/admin' : '/dashboard';
+  revalidatePath('/', 'layout');
+  redirect(redirectPath);
+}
+
+/**
+ * GENERATE 2FA SECRET
+ * Functionality: Creates a unique encryption key and QR code for Google Authenticator.
+ * Connection: Uses 'otplib' for TOTP generation and 'qrcode' for visualization.
+ */
+export async function generate2FASecret() {
+  const supabase = await createServerSupabaseClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { error: 'Not authenticated' };
+  }
+
+  const secret = generateSecret();
+  const otpauth = generateURI({
+    issuer: 'PMO-FSUU',
+    label: user.email!,
+    secret: secret,
+  });
+  const qrCodeUrl = await generateQRCode(otpauth);
+
+  return { secret, qrCodeUrl };
+}
+
+export async function enable2FA(secret: string, code: string) {
+  const supabase = await createServerSupabaseClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { error: 'Not authenticated' };
+  }
+
+  const result = await verify({
+    token: code,
+    secret: secret,
+  });
+  
+  const isValid = result.valid;
+
+
+  if (!isValid) {
+    return { error: 'Invalid verification code' };
+  }
+
+  const { error } = await supabase
+    .from('profiles')
+    .update({
+      two_factor_secret: secret,
+      two_factor_enabled: true,
+    })
+    .eq('id', user.id);
+
+  if (error) {
+    return { error: error.message };
+  }
+
+  revalidatePath('/dashboard/settings', 'page');
+  return { success: true };
+}
+
+export async function disable2FA() {
+  const supabase = await createServerSupabaseClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { error: 'Not authenticated' };
+  }
+
+  const { error } = await supabase
+    .from('profiles')
+    .update({
+      two_factor_secret: null,
+      two_factor_enabled: false,
+    })
+    .eq('id', user.id);
+
+  if (error) {
+    return { error: error.message };
+  }
+
+  revalidatePath('/dashboard/settings', 'page');
+  return { success: true };
+}
+
+/**
+ * SIGN UP (REGISTRATION)
+ * Functionality: Creates a new user account in Supabase Auth.
+ * Connection: Automatically triggers a database function to create a entry in 'profiles'.
+ */
 export async function signUp(formData: FormData) {
   const rawData = {
     email: formData.get('email') as string,
@@ -51,7 +201,6 @@ export async function signUp(formData: FormData) {
     confirmPassword: formData.get('confirmPassword') as string,
     fullName: formData.get('fullName') as string,
     department: formData.get('department') as string,
-    organization: formData.get('organization') as string,
     contactNumber: formData.get('contactNumber') as string,
   };
 
@@ -68,7 +217,6 @@ export async function signUp(formData: FormData) {
       data: {
         full_name: result.data.fullName,
         department: result.data.department,
-        organization: result.data.organization,
         contact_number: result.data.contactNumber,
       },
     },
@@ -87,7 +235,7 @@ export async function signOut() {
   redirect('/login');
 }
 
-export async function getCurrentUser() {
+export const getCurrentUser = cache(async () => {
   try {
     const supabase = await createServerSupabaseClient();
     const { data: { user } } = await supabase.auth.getUser();
@@ -105,4 +253,4 @@ export async function getCurrentUser() {
     console.error('getCurrentUser exception:', e);
     return null;
   }
-}
+});

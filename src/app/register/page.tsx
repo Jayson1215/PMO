@@ -155,7 +155,8 @@ export default function RegisterPage() {
                   <Input
                     id="contactNumber"
                     name="contactNumber"
-                    placeholder="09XX XXX XXXX"
+                    placeholder="09*********"
+                    required
                     disabled={loading}
                   />
                 </div>

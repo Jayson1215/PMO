@@ -43,7 +43,18 @@ export const registerSchema = z
     confirmPassword: z.string(),
     fullName: z.string().min(2, 'Full name is required'),
     department: z.string().optional(),
-    contactNumber: z.string().optional(),
+    contactNumber: z
+      .string()
+      .min(1, 'Contact number is required')
+      .refine((val) => val.startsWith('09'), {
+        message: '09 should be inputed',
+      })
+      .refine((val) => val.length === 11, {
+        message: 'Contact number must be exactly 11 digits',
+      })
+      .refine((val) => /^\d+$/.test(val), {
+        message: 'Contact number must contain only digits',
+      }),
   })
   .refine((data) => data.password === data.confirmPassword, {
     message: 'Passwords do not match',
@@ -64,6 +75,7 @@ export const equipmentSchema = z.object({
   serial_number: z.string().optional(),
   location: z.string().optional(),
   notes: z.string().optional(),
+  image_url: z.string().url('Please enter a valid URL').optional().or(z.literal('')),
 });
 
 /**

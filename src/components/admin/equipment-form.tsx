@@ -34,6 +34,7 @@ interface EquipmentFormProps {
 
 export function EquipmentFormDialog({ categories, equipment, onSuccess }: EquipmentFormProps) {
   const [open, setOpen] = useState(false);
+  const [imageUrl, setImageUrl] = useState(equipment?.image_url || "");
   const [isPending, startTransition] = useTransition();
   const isEditing = !!equipment;
 
@@ -189,6 +190,36 @@ export function EquipmentFormDialog({ categories, equipment, onSuccess }: Equipm
               defaultValue={equipment?.notes || ""}
               placeholder="Additional notes"
             />
+          </div>
+
+          <div className="space-y-2 border-t pt-4">
+            <Label htmlFor="image_url">Equipment Image (URL)</Label>
+            <div className="flex gap-2">
+              <Input
+                id="image_url"
+                name="image_url"
+                type="url"
+                defaultValue={equipment?.image_url || ""}
+                placeholder="https://images.unsplash.com/..."
+                onChange={(e) => setImageUrl(e.target.value)}
+              />
+            </div>
+            <p className="text-[10px] text-muted-foreground">
+              Paste a direct image link from the web (e.g. Unsplash, Google Images)
+            </p>
+            {imageUrl && (
+              <div className="mt-2 relative aspect-video w-full overflow-hidden rounded-lg border bg-muted">
+                <img
+                  src={imageUrl}
+                  alt="Preview"
+                  className="object-cover w-full h-full"
+                  onError={() => {
+                    toast.error("Invalid image URL");
+                    setImageUrl("");
+                  }}
+                />
+              </div>
+            )}
           </div>
 
           <DialogFooter>

@@ -30,7 +30,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { Loader2, CheckCircle, Package } from "lucide-react";
-import Image from "next/image";
+
 import type { EquipmentWithCategory, Profile } from "@/types/database";
 
 interface BookingFormProps {
@@ -98,12 +98,10 @@ export function BookingForm({ equipment, user }: BookingFormProps) {
               >
                 <div className="mb-2 flex h-12 w-12 items-center justify-center rounded-lg bg-gray-100">
                   {item.image_url ? (
-                    <Image
+                    <img
                       src={item.image_url}
                       alt={item.name}
-                      width={48}
-                      height={48}
-                      className="rounded-lg object-cover"
+                      className="h-12 w-12 rounded-lg object-cover"
                     />
                   ) : (
                     <Package className="h-6 w-6 text-gray-400" />

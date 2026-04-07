@@ -6,7 +6,7 @@ import { StatusBadge } from "@/components/shared/status-badge";
 import { EmptyState } from "@/components/shared/empty-state";
 import { TableSkeleton } from "@/components/shared/loading-skeletons";
 import { Package } from "lucide-react";
-import Image from "next/image";
+
 
 async function EquipmentCatalogContent() {
   const equipment = await getEquipment();
@@ -27,11 +27,10 @@ async function EquipmentCatalogContent() {
         <Card key={item.id} className="overflow-hidden">
           <div className="relative h-36 bg-gray-100">
             {item.image_url ? (
-              <Image
+              <img
                 src={item.image_url}
                 alt={item.name}
-                fill
-                className="object-cover"
+                className="absolute inset-0 h-full w-full object-cover"
               />
             ) : (
               <div className="flex h-full items-center justify-center">

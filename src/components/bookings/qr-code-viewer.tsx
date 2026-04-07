@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { QrCode, Loader2, Download } from "lucide-react";
-import Image from "next/image";
+
 
 interface QRCodeViewerProps {
   bookingId: string;
@@ -71,11 +71,9 @@ export function QRCodeViewer({
             {loading ? (
               <Loader2 className="h-10 w-10 animate-spin text-fsuu-blue-600" />
             ) : qrCodeUrl ? (
-              <Image
+              <img
                 src={qrCodeUrl}
                 alt={`QR Code for ${bookingCode}`}
-                width={256}
-                height={256}
                 className="h-full w-full object-contain"
               />
             ) : null}

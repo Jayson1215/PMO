@@ -68,6 +68,35 @@ export async function signIn(formData: FormData) {
 }
 
 /**
+ * SIGN IN WITH GOOGLE
+ * Functionality: Redirects the user to Google for OAuth authentication.
+ * Connection: Uses Supabase OAuth with a redirect callback.
+ */
+export async function signInWithGoogle() {
+  const supabase = await createServerSupabaseClient();
+  const origin = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+  
+  const { data, error } = await supabase.auth.signInWithOAuth({
+    provider: 'google',
+    options: {
+      redirectTo: `${origin}/auth/callback`,
+      queryParams: {
+        access_type: 'offline',
+        prompt: 'consent',
+      },
+    },
+  });
+
+  if (error) {
+    return { error: error.message };
+  }
+
+  if (data.url) {
+    redirect(data.url);
+  }
+}
+
+/**
  * 2FA LOGIN VERIFICATION
  * Functionality: Validates the 6-digit TOTP code during login.
  * Connection: Fetches the 'two_factor_secret' from the 'profiles' table.

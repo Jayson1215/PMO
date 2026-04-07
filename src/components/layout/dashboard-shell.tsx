@@ -31,7 +31,6 @@ import {
   BarChart3,
   FileText,
   ChevronLeft,
-  QrCode,
 } from "lucide-react";
 import { signOut } from "@/actions/auth";
 import type { Profile } from "@/types/database";
@@ -46,7 +45,7 @@ interface SidebarProps {
 
 const adminNavItems = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/admin/scan", label: "Quick Scan", icon: QrCode },
+
   { href: "/admin/bookings", label: "Bookings", icon: ClipboardList },
   { href: "/admin/equipment", label: "Equipment", icon: Package },
   { href: "/admin/calendar", label: "Calendar", icon: Calendar },

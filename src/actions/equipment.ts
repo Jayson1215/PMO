@@ -87,6 +87,7 @@ export async function createEquipment(formData: FormData) {
     serial_number: formData.get('serial_number') as string,
     location: formData.get('location') as string,
     notes: formData.get('notes') as string,
+    image_url: formData.get('image_url') as string || null,
   };
 
   const result = equipmentSchema.safeParse(rawData);
@@ -118,6 +119,7 @@ export async function updateEquipment(id: string, formData: FormData) {
     serial_number: formData.get('serial_number') as string,
     location: formData.get('location') as string,
     notes: formData.get('notes') as string,
+    image_url: formData.get('image_url') as string || null,
   };
 
   const result = equipmentSchema.safeParse(rawData);

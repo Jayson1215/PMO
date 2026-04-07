@@ -7,7 +7,7 @@ import { EmptyState } from "@/components/shared/empty-state";
 import { TableSkeleton } from "@/components/shared/loading-skeletons";
 import { EquipmentFormDialog } from "@/components/admin/equipment-form";
 import { Package, Archive } from "lucide-react";
-import Image from "next/image";
+
 
 async function EquipmentContent() {
   const [equipment, categories] = await Promise.all([
@@ -46,11 +46,10 @@ async function EquipmentContent() {
             {/* Equipment Image */}
             <div className="relative h-40 bg-gray-100">
               {item.image_url ? (
-                <Image
+                <img
                   src={item.image_url}
                   alt={item.name}
-                  fill
-                  className="object-cover"
+                  className="absolute inset-0 h-full w-full object-cover"
                 />
               ) : (
                 <div className="flex h-full items-center justify-center">

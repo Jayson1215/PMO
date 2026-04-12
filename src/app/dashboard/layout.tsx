@@ -1,4 +1,5 @@
-// Dynamic rendering is handled automatically by the use of cookies/headers in getCurrentUser
+// All dashboard routes require cookies for auth — must be rendered dynamically
+export const dynamic = 'force-dynamic';
 
 
 import { redirect } from "next/navigation";

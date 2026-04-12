@@ -74,7 +74,10 @@ export async function signIn(formData: FormData) {
  */
 export async function signInWithGoogle() {
   const supabase = await createServerSupabaseClient();
-  const origin = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+  // Use the configured app URL, or Vercel's auto-provided URL, or fallback to localhost
+  const origin = process.env.NEXT_PUBLIC_APP_URL 
+    || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null)
+    || 'http://localhost:3000';
   
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: 'google',

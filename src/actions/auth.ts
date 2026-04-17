@@ -116,7 +116,7 @@ export async function verify2FALogin(email: string, code: string) {
 
   if (!profile || !profile.two_factor_secret) {
     return { error: 'Invalid authentication state' };
-  }
+  } 
 
   const result = await verify({
     token: code,

@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { generate2FASecret, enable2FA, disable2FA } from '@/actions/auth';
 import { toast } from 'sonner';
-import { ShieldCheck, ShieldAlert, Loader2, QrCode } from 'lucide-react';
+import { ShieldCheck, ShieldAlert, Loader2 } from 'lucide-react';
 
 interface TwoFactorSetupProps {
   isTwoFactorEnabled: boolean;
@@ -17,7 +17,6 @@ export function TwoFactorSetup({ isTwoFactorEnabled }: TwoFactorSetupProps) {
     isTwoFactorEnabled ? 'enabled' : 'initial'
   );
   const [secret, setSecret] = useState('');
-  const [qrCodeUrl, setQrCodeUrl] = useState('');
   const [verificationCode, setVerificationCode] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
@@ -29,7 +28,6 @@ export function TwoFactorSetup({ isTwoFactorEnabled }: TwoFactorSetupProps) {
         toast.error(result.error);
       } else {
         setSecret(result.secret);
-        setQrCodeUrl(result.qrCodeUrl);
         setStep('setup');
       }
     } catch (error) {
@@ -75,7 +73,6 @@ export function TwoFactorSetup({ isTwoFactorEnabled }: TwoFactorSetupProps) {
         toast.success('Two-factor authentication disabled.');
         setStep('initial');
         setSecret('');
-        setQrCodeUrl('');
         setVerificationCode('');
       }
     } catch (error) {
@@ -118,18 +115,11 @@ export function TwoFactorSetup({ isTwoFactorEnabled }: TwoFactorSetupProps) {
         <CardHeader>
           <CardTitle>Set up Authenticator App</CardTitle>
           <CardDescription>
-            Scan the QR code below using Google Authenticator, Authy, or any TOTP app.
+            Enter your secret key into Google Authenticator, Authy, or any TOTP app.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="flex flex-col items-center justify-center space-y-4 p-4 bg-white rounded-lg border">
-            {qrCodeUrl ? (
-              <img src={qrCodeUrl} alt="QR Code" className="w-48 h-48" />
-            ) : (
-              <div className="w-48 h-48 bg-muted flex items-center justify-center">
-                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-              </div>
-            )}
             <div className="text-center space-y-1">
               <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Secret Key</p>
               <code className="px-2 py-1 bg-muted rounded text-sm font-mono break-all">{secret}</code>
@@ -181,7 +171,7 @@ export function TwoFactorSetup({ isTwoFactorEnabled }: TwoFactorSetupProps) {
       </CardHeader>
       <CardFooter>
         <Button variant="fsuu" onClick={handleStartSetup} disabled={isLoading}>
-          {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <QrCode className="mr-2 h-4 w-4" />}
+          {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
           Setup Authenticator
         </Button>
       </CardFooter>

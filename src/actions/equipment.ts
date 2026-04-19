@@ -67,7 +67,7 @@ export async function getCategories() {
     console.error('getCategories exception:', e);
     return [];
   }
-}
+} 
 
 /**
  * CREATE EQUIPMENT (Admin Only)

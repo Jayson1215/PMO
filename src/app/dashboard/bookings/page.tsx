@@ -15,7 +15,6 @@ import { Button } from "@/components/ui/button";
 import { formatDateTime, formatTimeRemaining } from "@/lib/utils";
 import { ClipboardList, Package, Calendar, Clock } from "lucide-react";
 import Link from "next/link";
-import { QRCodeViewer } from "@/components/bookings/qr-code-viewer";
 
 async function MyBookingsContent() {
   const bookings = await getUserBookings();
@@ -73,17 +72,6 @@ async function MyBookingsContent() {
                 }`}>
                   {formatTimeRemaining(booking.return_date)}
                 </p>
-              )}
-            </div>
-          </div>
-          <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
-            <div className="flex items-center gap-2">
-              {['pending', 'approved', 'borrowed'].includes(booking.status) && (
-                <QRCodeViewer 
-                  bookingId={booking.id} 
-                  bookingCode={booking.booking_code}
-                  equipmentName={booking.equipment?.name}
-                />
               )}
             </div>
           </div>

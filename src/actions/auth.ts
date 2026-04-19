@@ -12,7 +12,6 @@ import { loginSchema, registerSchema } from '@/lib/validations';
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 import { generateSecret, verify, generateURI } from 'otplib';
-import { generateQRCode } from '@/lib/qrcode';
 import { cookies } from 'next/headers';
 import { cache } from 'react';
 
@@ -138,29 +137,10 @@ export async function verify2FALogin(email: string, code: string) {
 }
 
 /**
- * GENERATE 2FA SECRET
- * Functionality: Creates a unique encryption key and QR code for Google Authenticator.
- * Connection: Uses 'otplib' for TOTP generation and 'qrcode' for visualization.
+ * ENABLE 2FA
+ * Functionality: Verifies the TOTP code and enables 2FA for the user.
+ * Connection: Updates the 'profiles' table with the secret and enabled flag.
  */
-export async function generate2FASecret() {
-  const supabase = await createServerSupabaseClient();
-  const { data: { user } } = await supabase.auth.getUser();
-
-  if (!user) {
-    return { error: 'Not authenticated' };
-  }
-
-  const secret = generateSecret();
-  const otpauth = generateURI({
-    issuer: 'PMO-FSUU',
-    label: user.email!,
-    secret: secret,
-  });
-  const qrCodeUrl = await generateQRCode(otpauth);
-
-  return { secret, qrCodeUrl };
-}
-
 export async function enable2FA(secret: string, code: string) {
   const supabase = await createServerSupabaseClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -175,7 +155,6 @@ export async function enable2FA(secret: string, code: string) {
   });
   
   const isValid = result.valid;
-
 
   if (!isValid) {
     return { error: 'Invalid verification code' };
@@ -195,6 +174,29 @@ export async function enable2FA(secret: string, code: string) {
 
   revalidatePath('/dashboard/settings', 'page');
   return { success: true };
+}
+
+/**
+ * GENERATE 2FA SECRET
+ * Functionality: Creates a unique encryption key for Google Authenticator.
+ * Connection: Uses 'otplib' for TOTP generation.
+ */
+export async function generate2FASecret() {
+  const supabase = await createServerSupabaseClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { error: 'Not authenticated' };
+  }
+
+  const secret = generateSecret();
+  const otpauth = generateURI({
+    issuer: 'PMO-FSUU',
+    label: user.email!,
+    secret: secret,
+  });
+
+  return { secret, otpauth };
 }
 
 export async function disable2FA() {
